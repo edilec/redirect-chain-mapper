@@ -1,0 +1,17 @@
+{
+  "name": "redirect-chain-mapper",
+  "version": "0.0.0",
+  "description": "Map redirect chains and loops from an exported request trace.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edilec/redirect-chain-mapper"
+  }
+}
