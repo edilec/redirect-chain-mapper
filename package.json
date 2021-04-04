@@ -1,17 +1,51 @@
 {
   "name": "redirect-chain-mapper",
-  "version": "0.0.0",
-  "description": "Map redirect chains and loops from an exported request trace.",
+  "version": "0.1.0",
+  "description": "Map redirect chains, loops, scheme changes and incomplete captures from a HAR export or a JSON request trace.",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test"
+    "lint": "node --check src/normalize.mjs && node --check src/config.mjs && node --check src/trace.mjs && node --check src/index.mjs && node --check bin/redirect-chain-mapper.mjs && node --check test/normalize.test.mjs && node --check test/map.test.mjs && node --check test/incomplete.test.mjs && node --check test/confinement.test.mjs && node --check test/severity-table.test.mjs && node --check test/cli.test.mjs",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
+    "example": "node bin/redirect-chain-mapper.mjs --trace examples/clean/trace.json",
+    "pack:check": "npm pack --dry-run",
+    "check": "npm run lint && npm test && npm run example && npm run pack:check"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edilec/redirect-chain-mapper"
-  }
+    "url": "git+https://github.com/edilec/redirect-chain-mapper.git"
+  },
+  "bin": {
+    "redirect-chain-mapper": "./bin/redirect-chain-mapper.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "redirect",
+    "har",
+    "http",
+    "seo",
+    "loop-detection",
+    "trace",
+    "cli"
+  ],
+  "author": "Edilec Private Limited",
+  "bugs": {
+    "url": "https://github.com/edilec/redirect-chain-mapper/issues"
+  },
+  "homepage": "https://github.com/edilec/redirect-chain-mapper#readme"
 }
