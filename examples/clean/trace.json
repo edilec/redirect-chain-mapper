@@ -1,0 +1,29 @@
+{
+  "captureComplete": true,
+  "requests": [
+    {
+      "url": "https://example.com/blog/old-post",
+      "method": "GET",
+      "status": 301,
+      "location": "/blog/new-post",
+      "comment": "absolute-path reference"
+    },
+    {
+      "url": "https://example.com/blog/new-post",
+      "method": "GET",
+      "status": 308,
+      "location": "post",
+      "comment": "relative reference, resolved against the request URL per RFC 7231"
+    },
+    {
+      "url": "https://example.com/blog/post",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "url": "https://example.com/robots.txt",
+      "method": "GET",
+      "status": 200
+    }
+  ]
+}

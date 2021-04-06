@@ -1,0 +1,13 @@
+{
+  "captureComplete": true,
+  "requests": [
+    { "url": "https://shop.example.com/a", "method": "GET", "status": 302, "location": "/b" },
+    { "url": "https://shop.example.com/b", "method": "GET", "status": 302, "location": "http://shop.example.com/c" },
+    { "url": "http://shop.example.com/c", "method": "GET", "status": 301, "location": "https://shop.example.com/d" },
+    { "url": "https://shop.example.com/d", "method": "GET", "status": 302, "location": "/e" },
+    { "url": "https://shop.example.com/e", "method": "GET", "status": 200 },
+    { "url": "https://loop.example.com/one", "method": "GET", "status": 302, "location": "/two" },
+    { "url": "https://loop.example.com/two", "method": "GET", "status": 307, "location": "one" },
+    { "url": "https://bad.example.com/x", "method": "GET", "status": 301, "location": "javascript:void(0)" }
+  ]
+}
