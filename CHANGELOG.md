@@ -45,7 +45,9 @@ breaking change and is recorded here.
 
 - A chain whose final hop has no captured response, or whose target the capture
   never requested, is `incomplete` with no destination. The destination is never
-  inferred from the `Location` of the last captured hop.
+  inferred from the `Location` of the last captured hop. A lone request with no
+  captured response — a HAR entry recorded with status `0`, a trace request with
+  no `status` — is the same absent evidence and is `incomplete` too, not a pass.
 - A run that mapped no chain reports `trace-empty` and `incomplete`. `pass` with
   `checked: 0` is refused by the status expression itself, independently of that
   finding.

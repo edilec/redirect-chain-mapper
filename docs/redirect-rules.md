@@ -99,7 +99,7 @@ the address the capture actually recorded a response for.
 | --- | --- | --- |
 | `capture-declared-incomplete` | warning | The trace sets `captureComplete: false`, so any chain in it may stop short of its real destination. |
 | `chain-mapped` | info | One chain with at least one redirect, its hop count, and its destination when the capture recorded one. |
-| `chain-response-missing` | warning | The chain's last hop was requested but no response was captured, so its destination is unknown. |
+| `chain-response-missing` | warning | The chain's last hop was requested but no response was captured, so its destination is unknown. The run is `incomplete`. |
 | `chain-target-not-captured` | warning | The chain redirects to an address the capture never requested, so its destination is unknown. |
 | `chain-too-long` | error | The chain holds more redirects than the `maxChainLength` policy allows. |
 | `entry-invalid` | error | An entry has no usable request URL or an impossible status, and was dropped. |
@@ -123,7 +123,7 @@ the address the capture actually recorded a response for.
 | `no-redirects` | info | Every mapped chain reached a terminal response without redirecting once. |
 | `redirect-loop` | error | The chain returns to an address it already visited and cannot terminate. |
 | `redirect-status-unusual` | warning | A 3xx outside 301, 302, 303, 307, 308 was captured; the chain was not followed past it. |
-| `request-not-captured` | warning | A single request with no captured response and no redirect of its own. |
+| `request-not-captured` | warning | A single request with no captured response and no redirect of its own. Absent evidence, so the run is `incomplete`. |
 | `scheme-downgrade` | error | The chain redirects from `https` to `http`. |
 | `trace-empty` | error | Nothing could be mapped, so nothing was checked. A run that saw no evidence is not a pass. |
 | `trace-unknown-field` | error | A key the trace shape does not define, at the top level or in a request. |
@@ -160,6 +160,10 @@ characters replaced by spaces. Captured content is data and is never echoed unbo
 
 `incomplete` wins over `fail`, and `checked: 0` can never be `pass` — the status expression itself
 refuses it, independently of the `trace-empty` finding that explains it.
+
+A hop that was requested and whose response the capture does not hold is missing evidence whether or
+not a redirect preceded it: `chain-response-missing` and `request-not-captured` both make the run
+`incomplete`. A capture in which nothing came back is not a capture in which nothing is wrong.
 
 There are two shapes of exit 2:
 

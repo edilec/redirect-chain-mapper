@@ -77,9 +77,14 @@ export const RULE_SEVERITY = Object.freeze({
  * Rules that mean evidence was missing, truncated or deliberately not followed.
  *
  * Any one of them makes the run `incomplete`, which is not interchangeable with
- * `pass`. Four of them carry a severity below `error`, so for those the flag is
+ * `pass`. Six of them carry a severity below `error`, so for those the flag is
  * the *only* thing standing between an unknown answer and a green one — each
  * has a test that fails if it stops being listed here.
+ *
+ * `request-not-captured` and `chain-response-missing` are the same evidential
+ * situation — a hop that was requested and whose response the capture does not
+ * hold — and differ only by whether a redirect preceded it. Neither can be a
+ * pass: an uncaptured response is absent evidence, not evidence of absence.
  */
 export const INCOMPLETE_RULES = Object.freeze([
   'capture-declared-incomplete',
@@ -95,6 +100,7 @@ export const INCOMPLETE_RULES = Object.freeze([
   'input-too-large',
   'input-unreadable',
   'redirect-status-unusual',
+  'request-not-captured',
   'trace-empty',
   'trace-unknown-field',
   'trace-unrecognized',

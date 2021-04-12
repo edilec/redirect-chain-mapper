@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -85,6 +85,25 @@ test('a HAR whose last hop has no captured response exits 2', async () => {
   const report = JSON.parse(result.stdout)
   assert.equal(report.status, 'incomplete')
   assert.ok(report.findings.some((finding) => finding.ruleId === 'chain-response-missing'))
+})
+
+test('a capture whose only request has no captured response exits 2, not 0', async () => {
+  // Nothing in this capture is an error, so a process that exits 0 here is a
+  // tool reporting "fine" about a response it never saw.
+  const directory = await mkdtemp(join(tmpdir(), 'redirect-chain-mapper-cli-'))
+  const path = join(directory, 'uncaptured.json')
+  await writeFile(path, JSON.stringify({ captureComplete: true, requests: [{ url: 'https://example.com/a' }] }))
+
+  const result = await runCli(['--trace', path, '--json'])
+  assert.equal(result.code, 2, 'an uncaptured response must never exit 0')
+  const report = JSON.parse(result.stdout)
+  assert.equal(report.status, 'incomplete')
+  assert.equal(report.summary.errors, 0)
+  assert.equal(report.summary.checked, 1)
+  assert.deepEqual(
+    report.findings.map((finding) => finding.ruleId),
+    ['request-not-captured'],
+  )
 })
 
 test('an input that could not be read exits 2 with a report saying which input', async () => {

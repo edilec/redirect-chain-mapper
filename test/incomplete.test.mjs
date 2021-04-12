@@ -192,6 +192,40 @@ for (const scenario of FLAG_IS_THE_ONLY_GUARD) {
   })
 }
 
+test('a request whose response was never captured is incomplete, in either input shape', async () => {
+  // The same evidential situation as `chain-response-missing` — a hop that was
+  // requested and whose response the capture does not hold — with no redirect
+  // in front of it. Nothing here is an error, so the incomplete flag is the
+  // only thing between "nothing came back" and a green run.
+  const trace = await mapDocument({
+    captureComplete: true,
+    requests: [{ url: 'https://example.com/a' }, { url: 'https://example.com/b' }],
+  })
+  assert.deepEqual(rules(trace.report), ['request-not-captured', 'request-not-captured'])
+  assert.equal(trace.report.summary.errors, 0, 'no error severity may be doing the work here')
+  assert.equal(trace.report.summary.warnings, 2, 'an uncaptured response is at least a warning')
+  assert.equal(trace.report.summary.checked, 2, 'the run must have mapped something')
+  assert.equal(trace.report.status, 'incomplete')
+  assert.equal(exitCodeFor(trace.report), 2)
+  assert.ok(INCOMPLETE_RULES.includes('request-not-captured'), 'request-not-captured must mark the run incomplete')
+
+  // A HAR records a request that never produced a response as status 0, and a
+  // HAR whose "response" key is misspelt carries no response object at all.
+  for (const response of [{ status: 0, headers: [] }, undefined]) {
+    const har = await mapDocument({
+      log: {
+        version: '1.2',
+        entries: [{ request: { method: 'GET', url: 'https://example.org/a' }, response }],
+      },
+    })
+    assert.deepEqual(rules(har.report), ['request-not-captured'], JSON.stringify(response ?? null))
+    assert.equal(har.report.summary.errors, 0)
+    assert.equal(har.report.summary.checked, 1)
+    assert.equal(har.report.status, 'incomplete')
+    assert.equal(exitCodeFor(har.report), 2)
+  }
+})
+
 test('a capture that declares itself truncated is incomplete with no error finding', async () => {
   const { report } = await mapDocument({
     captureComplete: false,
