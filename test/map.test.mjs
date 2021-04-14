@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
-import { ConfigError, mapTrace } from '../src/index.mjs'
+import { ConfigError, exitCodeFor, mapTrace } from '../src/index.mjs'
 
 const projectDirectory = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
@@ -175,6 +175,11 @@ test('a HAR whose header and redirectURL disagree says which one was believed', 
   assert.deepEqual(rules(report), ['chain-mapped', 'location-inconsistent'])
   assert.equal(chains[0].destination, 'https://example.org/two')
   assert.equal(report.status, 'pass')
+  // A capture that contradicts itself is worth the reader's attention even
+  // though the chain still resolved, so it is counted as a warning and not
+  // filed away as information.
+  assert.equal(report.findings[1].severity, 'warning')
+  assert.equal(report.summary.warnings, 1)
 })
 
 test('two different Location values for one response refuse to pick a destination', async () => {
@@ -196,12 +201,40 @@ test('two different Location values for one response refuse to pick a destinatio
   assert.equal(report.status, 'fail')
 })
 
-test('a redirect status with no Location value is an error, not an invented destination', async () => {
-  const { report, chains } = await mapDocument({
-    requests: [{ url: 'https://example.com/a', status: 301, headers: [] }],
-  })
-  assert.deepEqual(rules(report), ['chain-mapped', 'location-missing'])
-  assert.equal(chains[0].destination, null)
+test('a Location that cannot be used is an error, not an invented destination', async () => {
+  // A redirect the capture recorded and whose target cannot be worked out is
+  // *captured evidence of a defect*, so it fails. None of these three rules is
+  // in INCOMPLETE_RULES, which makes their `error` severity the only thing
+  // between a broken redirect and exit 0 — demote one and this run turns green
+  // with the defect still in the capture.
+  const cases = [
+    {
+      name: 'no Location value at all',
+      request: { url: 'https://example.com/a', status: 301, headers: [] },
+      ruleId: 'location-missing',
+    },
+    {
+      name: 'an empty Location, which is not resolved back to the request URL',
+      request: { url: 'https://example.com/a', status: 301, location: '' },
+      ruleId: 'location-empty',
+    },
+    {
+      name: 'a Location that does not resolve against the request URL',
+      request: { url: 'https://example.com/a', status: 301, location: 'http://' },
+      ruleId: 'location-invalid',
+    },
+  ]
+
+  for (const scenario of cases) {
+    const { report, chains } = await mapDocument({ requests: [scenario.request] })
+    assert.deepEqual(rules(report), ['chain-mapped', scenario.ruleId], scenario.name)
+    assert.equal(report.findings[1].severity, 'error', scenario.name)
+    assert.equal(report.summary.errors, 1, scenario.name)
+    assert.equal(report.status, 'fail', scenario.name)
+    assert.equal(exitCodeFor(report), 1, scenario.name)
+    assert.equal(chains[0].outcome, 'location-unusable', scenario.name)
+    assert.equal(chains[0].destination, null, scenario.name)
+  }
 })
 
 test('a 3xx this tool does not follow stops the chain and says so', async () => {

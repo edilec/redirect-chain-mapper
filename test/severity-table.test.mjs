@@ -71,6 +71,32 @@ test('the rules that decide a refusal are errors, not warnings', () => {
   assert.equal(RULE_SEVERITY['redirect-loop'], 'error')
   assert.equal(RULE_SEVERITY['trace-empty'], 'error')
   assert.equal(RULE_SEVERITY['trace-unknown-field'], 'error')
+  // The broken-redirect rules. Unlike every other error rule these three are
+  // not in INCOMPLETE_RULES, so severity is their sole guard: as `warning`
+  // they turn a capture with a broken redirect into pass and exit 0.
+  assert.equal(RULE_SEVERITY['location-missing'], 'error')
+  assert.equal(RULE_SEVERITY['location-empty'], 'error')
+  assert.equal(RULE_SEVERITY['location-invalid'], 'error')
+  for (const ruleId of Object.values(LOCATION_RULE)) {
+    assert.equal(RULE_SEVERITY[ruleId], 'error', `${ruleId} is a broken Location and must fail the run`)
+  }
+})
+
+test('the rules that report missing or contradictory evidence are warnings, not info', () => {
+  // Demoting one of these changes no exit code, so nothing else in the suite
+  // would notice. It still breaks the report contract: `summary.warnings` and
+  // the human summary are how a reader learns the capture was not whole.
+  for (const ruleId of [
+    'capture-declared-incomplete',
+    'chain-response-missing',
+    'chain-target-not-captured',
+    'har-version-unsupported',
+    'location-inconsistent',
+    'redirect-status-unusual',
+    'request-not-captured',
+  ]) {
+    assert.equal(RULE_SEVERITY[ruleId], 'warning', `${ruleId} must be counted as a warning`)
+  }
 })
 
 test('every table entry uses a severity the report contract defines', () => {
