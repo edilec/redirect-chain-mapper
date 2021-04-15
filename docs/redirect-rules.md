@@ -147,8 +147,11 @@ All five are set with `--limit NAME=VALUE`, repeatable, and by `limits` on the A
 is a configuration error, not a value that is ignored. The first four are safety bounds and make the
 run `incomplete`; `maxChainLength` is a policy about the site being audited and makes the run `fail`.
 
-Evidence excerpts are additionally capped at 300 characters, flattened to one line, with control
-characters replaced by spaces. Captured content is data and is never echoed unbounded.
+Evidence excerpts are additionally capped at 300 characters, flattened to one line: every C0 control
+character, DEL, and the U+2028 and U+2029 separators become a space, runs of spaces collapse to one,
+and the result is trimmed. U+2028 is included because it is legal inside a JSON string and
+`JSON.stringify` leaves it there, so a report carrying one would break a consumer that embeds the
+report in a script. Captured content is data and is never echoed unbounded.
 
 ## Status and exit code
 

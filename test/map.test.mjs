@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
-import { ConfigError, exitCodeFor, mapTrace } from '../src/index.mjs'
+import { ConfigError, EVIDENCE_LIMIT, excerpt, exitCodeFor, mapTrace } from '../src/index.mjs'
 
 const projectDirectory = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
@@ -399,7 +399,7 @@ test('mapping the same capture twice produces byte-identical JSON', async () => 
   assert.ok(first.report.findings.length >= 5, 'the determinism check must run over a non-trivial report')
 })
 
-test('evidence is bounded and carries no control characters', async () => {
+test('evidence is bounded to the declared limit', async () => {
   const long = 'x'.repeat(900)
   const { report } = await mapDocument({
     requests: [
@@ -408,9 +408,53 @@ test('evidence is bounded and carries no control characters', async () => {
     ],
   })
   const evidence = report.findings[0].evidence
-  assert.ok(evidence.length <= 303, `evidence was ${evidence.length} characters`)
+  assert.equal(evidence.length, EVIDENCE_LIMIT + 3, 'a long value is cut to the limit plus an ellipsis')
   assert.ok(evidence.endsWith('...'))
-  for (const character of evidence) {
-    assert.ok(character.codePointAt(0) >= 0x20, 'evidence must hold no control character')
+
+  assert.equal(excerpt('z'.repeat(EVIDENCE_LIMIT)).length, EVIDENCE_LIMIT, 'a value exactly at the limit is not cut')
+  assert.equal(excerpt('z'.repeat(EVIDENCE_LIMIT + 1)).length, EVIDENCE_LIMIT + 3)
+})
+
+test('excerpt flattens a captured value onto one line', () => {
+  // Captured content is data, and every excerpt in the report goes through this
+  // one function. Asserted here directly: a fixture that holds no control
+  // character to begin with cannot tell whether the flattening still happens.
+  assert.equal(excerpt('a\r\nb'), 'a b', 'CR and LF become spaces')
+  assert.equal(excerpt('a\u0000b\u001fc\u007fd'), 'a b c d', 'NUL, C0 and DEL become spaces')
+  assert.equal(excerpt('a\u2028b\u2029c'), 'a b c', 'the line and paragraph separators become spaces')
+  assert.equal(excerpt('a   b'), 'a b', 'runs of spaces collapse')
+  assert.equal(excerpt('\tlead and trail '), 'lead and trail', 'the result is trimmed')
+  assert.equal(excerpt('plain text'), 'plain text', 'ordinary text is untouched')
+  assert.equal(excerpt('caf\u00e9 \u00fc\u4f60\u597d'), 'caf\u00e9 \u00fc\u4f60\u597d', 'non-ASCII text is not mangled')
+})
+
+test('a control character in a captured value never reaches the report', async () => {
+  // Both values below come from the capture and are echoed into evidence. The
+  // first is the log-injection shape: a request URL carrying CR LF and a line
+  // that would read as a record of its own. The second is U+2028, which is
+  // legal inside a JSON string and which JSON.stringify leaves exactly where it
+  // found it, so a report carrying one breaks any consumer that embeds the
+  // report in a script.
+  const { report } = await mapDocument({
+    requests: [
+      { url: ' https://example.com/a\r\nFAKE-LOG-LINE: injected ', status: 200 },
+      { url: 'https://example.com/b', status: 302, location: 'ftp://example.com/x\u2028y' },
+      { url: 'https://example.com/ok', status: 200 },
+    ],
+  })
+
+  const evidence = new Map(
+    report.findings.filter((finding) => finding.evidence !== undefined).map((finding) => [finding.ruleId, finding.evidence]),
+  )
+  assert.equal(evidence.get('entry-invalid'), 'https://example.com/a FAKE-LOG-LINE: injected')
+  assert.equal(evidence.get('location-unsupported-scheme'), 'ftp://example.com/x y')
+
+  const serialized = JSON.stringify(report)
+  for (const character of serialized) {
+    const code = character.codePointAt(0)
+    assert.ok(
+      code >= 0x20 && code !== 0x7f && code !== 0x2028 && code !== 0x2029,
+      `U+${code.toString(16).padStart(4, '0')} reached the report`,
+    )
   }
 })
