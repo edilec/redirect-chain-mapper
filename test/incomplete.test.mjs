@@ -240,6 +240,39 @@ test('a capture that declares itself truncated is incomplete with no error findi
   assert.equal(report.status, 'incomplete')
 })
 
+test('a captureComplete that is not a boolean is refused, not read as a value', async () => {
+  // Every non-boolean below except `false` itself is truthy, so a reader that
+  // assigned the value straight through would report a capture that declares
+  // itself truncated as a completed pass. Refusing the field is what keeps the
+  // declaration meaningful.
+  const requests = [
+    { url: 'https://example.com/a', status: 301, location: '/b' },
+    { url: 'https://example.com/b', status: 200 },
+  ]
+
+  for (const captureComplete of ['false', 'true', 0, 1, null, [], {}]) {
+    const label = JSON.stringify(captureComplete)
+    const { report } = await mapDocument({ captureComplete, requests })
+    assert.deepEqual(rules(report), ['trace-unknown-field', 'chain-mapped'], label)
+    assert.equal(report.findings[0].location.pointer, '/captureComplete', label)
+    assert.match(report.findings[0].message, /captureComplete must be true or false/)
+    assert.equal(report.findings[0].severity, 'error', label)
+    assert.equal(report.status, 'incomplete', label)
+    assert.equal(exitCodeFor(report), 2, label)
+  }
+
+  // And the two values the field does accept are still read as themselves, so
+  // the refusal above cannot be satisfied by refusing everything.
+  const complete = await mapDocument({ captureComplete: true, requests })
+  assert.deepEqual(rules(complete.report), ['chain-mapped'])
+  assert.equal(complete.report.status, 'pass')
+  assert.equal(exitCodeFor(complete.report), 0)
+
+  const truncated = await mapDocument({ captureComplete: false, requests })
+  assert.deepEqual(rules(truncated.report), ['capture-declared-incomplete', 'chain-mapped'])
+  assert.equal(truncated.report.status, 'incomplete')
+})
+
 test('an unrecognised HAR version is incomplete with no error finding', async () => {
   const { report } = await mapDocument({
     log: {

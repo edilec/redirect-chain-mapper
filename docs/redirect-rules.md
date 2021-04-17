@@ -43,7 +43,7 @@ Either an array of requests, or an object:
 | Field | Use |
 | --- | --- |
 | `requests` | Required array of request objects. |
-| `captureComplete` | Optional boolean. `false` raises `capture-declared-incomplete`. |
+| `captureComplete` | Optional boolean. `false` raises `capture-declared-incomplete`. Any other value is refused as `trace-unknown-field`, never read as truthy. |
 | `comment` | Optional. Ignored. |
 | `requests[].url` | Required absolute `http` or `https` URL. |
 | `requests[].method` | Optional. Reported only. Defaults to `GET`. |
@@ -126,7 +126,7 @@ the address the capture actually recorded a response for.
 | `request-not-captured` | warning | A single request with no captured response and no redirect of its own. Absent evidence, so the run is `incomplete`. |
 | `scheme-downgrade` | error | The chain redirects from `https` to `http`. |
 | `trace-empty` | error | Nothing could be mapped, so nothing was checked. A run that saw no evidence is not a pass. |
-| `trace-unknown-field` | error | A key the trace shape does not define, at the top level or in a request. |
+| `trace-unknown-field` | error | A key the trace shape does not define, at the top level or in a request, or a `captureComplete` that is not `true` or `false`. |
 | `trace-unrecognized` | error | The document is neither a HAR nor a trace, or not the shape `--format` requested. |
 
 Severity comes from one frozen table, `RULE_SEVERITY` in `src/index.mjs`. `test/severity-table.test.mjs`
