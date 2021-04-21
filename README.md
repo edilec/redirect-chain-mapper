@@ -93,8 +93,10 @@ What this tool **cannot** conclude:
   stale when it was written looks exactly like a fresh one.
 - **Where an unterminated chain goes.** A target the capture never requested, a hop with no captured
   response, an unusable `Location`, a 3xx outside the five followed statuses, and a chain that hit
-  `maxChainHops` all produce *no destination* and an `incomplete` run. That is the answer, not a gap
-  to be filled in.
+  `maxChainHops` all produce *no destination*. That is the answer, not a gap to be filled in. Which
+  status that earns depends on whether the evidence is absent or broken: the missing target, the
+  uncaptured response, the unfollowed 3xx and the hop bound make the run `incomplete`, while an
+  unusable `Location` is captured evidence of a defect and makes it `fail`.
 - **That a capture is complete.** A capture is only as complete as whatever produced it. A browser
   that stopped following, a proxy that dropped an entry, and a trace written from memory all look
   the same from here. Set `captureComplete: false` when you know it was truncated.
