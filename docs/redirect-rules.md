@@ -153,6 +153,14 @@ and the result is trimmed. U+2028 is included because it is legal inside a JSON 
 `JSON.stringify` leaves it there, so a report carrying one would break a consumer that embeds the
 report in a script. Captured content is data and is never echoed unbounded.
 
+A trace that cannot be parsed is held to the same rule, and it takes more than an excerpt. V8
+reports an invalid document two ways, and one of them embeds the input:
+`Unexpected token 'A', "AKIAIOSFODNN7EXAMPLE" is not valid JSON` reproduces a short trace in full,
+and a longer one through a window around the offence. That span never passed through the excerpt at
+all, and an excerpt could not have bounded it anyway, because it cuts from the end while the quoted
+span sits at the front. `input-invalid-json` keeps only the useful half -- the position, line and
+column where V8 reports them, and the offending token where it does not.
+
 ## Status and exit code
 
 | Status | When | Exit |

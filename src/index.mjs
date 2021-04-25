@@ -20,7 +20,7 @@ import { FORMATS, extractHops, readTraceDocument } from './trace.mjs'
 
 export { ConfigError, DEFAULT_LIMITS, validateLimits } from './config.mjs'
 export { byCodeUnit, normalizeUrl, resolveLocation, REDIRECT_STATUSES } from './normalize.mjs'
-export { FORMATS, detectFormat } from './trace.mjs'
+export { FORMATS, detectFormat, parseFailureDetail } from './trace.mjs'
 
 export const TOOL_ID = 'redirect-chain-mapper'
 export const REPORT_SCHEMA_VERSION = '1'

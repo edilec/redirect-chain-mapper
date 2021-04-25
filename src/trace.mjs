@@ -22,6 +22,41 @@ import {
   resolveLocation,
 } from './normalize.mjs'
 
+const QUOTED_INPUT = /^Unexpected token (.{1,12}?), (?:\.\.\.)?".*"(?:\.\.\.)? is not valid JSON$/s
+const PARSE_POSITION = /\bat position \d+(?: \(line \d+ column \d+\))?$/
+const PARSE_EMPTY = /^Unexpected end of JSON input$/
+
+/**
+ * The useful half of a `JSON.parse` failure, without the captured content V8
+ * puts in the other half.
+ *
+ * V8 reports a parse failure in two shapes. One names a position and quotes
+ * nothing. The other quotes the input back:
+ * `Unexpected token 'A', "AKIAIOSFODNN7EXAMPLE" is not valid JSON` -- the whole
+ * trace when it is short, a window around the offence when it is not. A trace
+ * is a capture of someone else's traffic, so a trace short enough to be only a
+ * credential is reproduced in full by its own error message, on the path taken
+ * by the capture nothing has validated.
+ *
+ * `excerpt` is not a defence: it flattens control characters and cuts from the
+ * END, while the quoted span sits at the front, well inside the limit.
+ *
+ * The quoting shape is recognised FIRST. Looking for `at position` first would
+ * be defeated by a trace that merely CONTAINS that phrase, because the quoted
+ * span would then be kept as though V8 had written it.
+ *
+ * Only the offending token survives from the quoting shape. The quoted span
+ * never leaves this function. It is defined here rather than beside `excerpt`
+ * in `index.mjs`, which already imports this module.
+ */
+export function parseFailureDetail(error) {
+  const message = String(error?.message ?? '')
+  const quoted = QUOTED_INPUT.exec(message)
+  if (quoted !== null) return `unexpected token ${quoted[1]}`
+  if (PARSE_POSITION.test(message) || PARSE_EMPTY.test(message)) return message
+  return 'it could not be parsed as JSON'
+}
+
 /** Accepted values for the input format option. */
 export const FORMATS = Object.freeze(['auto', 'har', 'trace'])
 
@@ -121,7 +156,7 @@ export async function readTraceDocument(path, limits) {
     return {
       problem: {
         ruleId: 'input-invalid-json',
-        message: `the trace is not valid JSON: ${error.message}`,
+        message: `the trace is not valid JSON: ${parseFailureDetail(error)}`,
         pointer: '/input',
       },
     }

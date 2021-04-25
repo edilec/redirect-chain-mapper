@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "lint": "node --check src/normalize.mjs && node --check src/config.mjs && node --check src/trace.mjs && node --check src/index.mjs && node --check bin/redirect-chain-mapper.mjs && node --check test/normalize.test.mjs && node --check test/map.test.mjs && node --check test/incomplete.test.mjs && node --check test/confinement.test.mjs && node --check test/severity-table.test.mjs && node --check test/cli.test.mjs",
+    "lint": "node --check src/normalize.mjs && node --check src/config.mjs && node --check src/trace.mjs && node --check src/index.mjs && node --check bin/redirect-chain-mapper.mjs && node --check test/normalize.test.mjs && node --check test/map.test.mjs && node --check test/incomplete.test.mjs && node --check test/confinement.test.mjs && node --check test/severity-table.test.mjs && node --check test/cli.test.mjs && node --check test/parse-leak.test.mjs",
     "test": "node --test",
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
     "example": "node bin/redirect-chain-mapper.mjs --trace examples/clean/trace.json",
