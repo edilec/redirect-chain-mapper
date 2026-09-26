@@ -1,0 +1,7 @@
+{
+  "captureComplete": true,
+  "requests": [
+    { "url": "https://example.com/start", "method": "GET", "status": 301, "location": "/middle" },
+    { "url": "https://example.com/middle", "method": "GET", "status": 302, "location": "/end" }
+  ]
+}
